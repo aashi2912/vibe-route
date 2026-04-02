@@ -210,16 +210,4 @@ Set environment variables in Vercel dashboard: `VITE_GOOGLE_MAPS_KEY` and `LLM_A
 
 ---
 
-## Background
 
-Built as an AI Product Manager portfolio project. The full case study — including the Klimes controversy, research analysis, bias framework, technical decisions, and honest reflections on what I cut and why — is available as a PDF in the project.
-
-**Author:** Aashi Thakkar
-**Timeline:** 5 weeks from research to deployed product
-**Target companies:** Google, Notion, Microsoft, Spotify, Uber, Netflix, Pinterest
-
----
-
-## License
-
-MIT
