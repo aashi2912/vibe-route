@@ -1,0 +1,9 @@
+# Demote frontend config so Python/notebooks show as primary language
+vite.config.js        linguist-vendored
+postcss.config.js     linguist-vendored
+tailwind.config.js    linguist-vendored
+package-lock.json     linguist-vendored
+bun.lock              linguist-vendored
+public/**             linguist-vendored
+index.html            linguist-vendored
+notebooks/**          linguist-detectable=true
