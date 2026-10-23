@@ -125,12 +125,12 @@ export default function ResultsScreen({
       new window.google.maps.Marker({
         position: { lat: origin.latitude, lng: origin.longitude },
         map: mapInstanceRef.current, title: "Start",
-        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#2d6a4f", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#2f6b4e", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
       }),
       new window.google.maps.Marker({
         position: { lat: destination.latitude, lng: destination.longitude },
         map: mapInstanceRef.current, title: "Destination",
-        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#e07a2f", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
+        icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#d8772e", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 },
       })
     );
 
@@ -254,16 +254,17 @@ export default function ResultsScreen({
                 setSelectedRouteId(route.id);
                 if (hasScores && onViewDetail) onViewDetail(route, index);
               }}
-              className={`route-card rounded-2xl p-4 mb-3 cursor-pointer border-2 ${
+              className={`route-card relative overflow-hidden rounded-2xl p-4 pl-5 mb-3 cursor-pointer border ${
                 isSelected
-                  ? isNight ? "bg-night-card shadow-lg" : "bg-white shadow-lg"
-                  : isNight ? "bg-night-card border-night-border" : "bg-white border-earth-100"
+                  ? isNight ? "bg-night-card" : "bg-white shadow-lift"
+                  : isNight ? "bg-night-card border-night-border" : "bg-white border-earth-100 shadow-card"
               }`}
               style={{
-                borderColor: isSelected ? color : undefined,
-                boxShadow: isSelected ? `0 4px 20px ${color}22` : undefined,
+                borderColor: isSelected ? `${color}55` : undefined,
               }}
             >
+              {/* Vibe-colored trail spine */}
+              <span className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: color }} aria-hidden="true" />
               {/* Header */}
               <div className="flex justify-between items-start mb-1">
                 <div className="flex items-center gap-3">
@@ -285,29 +286,34 @@ export default function ResultsScreen({
                 ) : null}
               </div>
 
-              {/* Score bars */}
+              {/* Four-signal readout — shows the MIX, so similar routes are distinguishable.
+                  Selected vibes are full-strength; unselected are dimmed context. */}
               {hasScores ? (
-                <div className="mt-3 space-y-1.5">
-                  {selectedVibes.map((vibeId) => {
-                    const vibe = VIBES.find((v) => v.id === vibeId);
-                    const score = route.scores?.[vibeId] ?? 0;
+                <div className="mt-3.5 flex gap-2">
+                  {VIBES.map((vibe) => {
+                    const score = route.scores?.[vibe.id];
+                    const has = score !== null && score !== undefined;
+                    const isSel = selectedVibes.includes(vibe.id);
+                    const pct = has ? Math.min(100, (score / 5) * 100) : 0;
                     return (
-                      <div key={vibeId} className="flex items-center gap-2">
-                        <span className="text-sm w-5 text-center flex-shrink-0">{vibe?.icon}</span>
-                        <div className={`flex-1 h-2 rounded-full overflow-hidden ${isNight ? "bg-night-border" : "bg-earth-100"}`}>
-                          <div className="score-bar-fill h-full rounded-full" style={{ width: `${Math.min(100, (score / 5) * 100)}%`, backgroundColor: color }} />
+                      <div key={vibe.id} className={`flex-1 text-center ${isSel ? "" : "opacity-45"}`}>
+                        <div className="text-[13px] leading-none mb-1.5" title={vibe.label}>{vibe.icon}</div>
+                        <div className={`h-6 rounded-md overflow-hidden flex items-end ${isNight ? "bg-night-border" : "bg-earth-100"}`}>
+                          <div className="score-bar-fill w-full rounded-md" style={{ height: `${pct}%`, backgroundColor: vibe.color }} />
                         </div>
-                        <span className={`text-xs font-bold font-body w-7 text-right ${isNight ? "text-night-muted" : "text-earth-500"}`}>{score.toFixed(1)}</span>
+                        <div className={`text-[10px] font-bold font-body mt-1 tabular-nums ${isSel ? (isNight ? "text-night-text" : "text-earth-600") : (isNight ? "text-night-muted" : "text-earth-400")}`}>
+                          {has ? score.toFixed(1) : "—"}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               ) : phase === "scoring" ? (
-                <div className="mt-3 space-y-2">
-                  {selectedVibes.map((vibeId) => (
-                    <div key={vibeId} className="flex items-center gap-2">
-                      <span className="text-sm">{VIBES.find((v) => v.id === vibeId)?.icon}</span>
-                      <div className={`flex-1 h-2 rounded-full animate-pulse ${isNight ? "bg-night-border" : "bg-earth-100"}`} />
+                <div className="mt-3.5 flex gap-2">
+                  {VIBES.map((vibe) => (
+                    <div key={vibe.id} className="flex-1 text-center">
+                      <div className="text-[13px] leading-none mb-1.5">{vibe.icon}</div>
+                      <div className={`h-6 rounded-md animate-pulse ${isNight ? "bg-night-border" : "bg-earth-100"}`} />
                     </div>
                   ))}
                 </div>
@@ -390,11 +396,11 @@ function getPoiIcon(types) {
 }
 
 const nightMapStyles = [
-  { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#1a1a2e" }] },
-  { elementType: "labels.text.fill", stylers: [{ color: "#6b6d88" }] },
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#2d2d4e" }] },
-  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#6b6d88" }] },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1a3a" }] },
-  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#1a2e1a" }] },
+  { elementType: "geometry", stylers: [{ color: "#141b22" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#141b22" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#7c867f" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#2b343c" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#7c867f" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0f1a22" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#17271c" }] },
 ];

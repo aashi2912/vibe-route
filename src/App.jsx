@@ -21,7 +21,9 @@ export default function App() {
   const [selectedVibes, setSelectedVibes] = useState(["green"]);
 
   // Day/night mode
-  const [isNight, setIsNight] = useState(() => isNightTime(43.65));
+  // Day-first: a walking app should feel bright and outdoors on first open.
+  // Night mode stays available via the toggle and auto-engages on a real night search.
+  const [isNight, setIsNight] = useState(false);
   const [nightOverride, setNightOverride] = useState(false);
 
   // Detail screen state

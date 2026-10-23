@@ -82,13 +82,7 @@ export default function DetailScreen({
                   <div className="flex-1">
                     <p className={`text-sm font-semibold font-body mb-1 ${isNight ? "text-night-text" : "text-earth-800"}`}>{vibe.label}</p>
                     <div className={`h-2.5 rounded-full overflow-hidden ${isNight ? "bg-night-border" : "bg-earth-100"}`}>
-                      {available ? (
-                        <div className="score-bar-fill h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
-                      ) : (
-                        <div className="h-full flex items-center px-2">
-                          <span className={`text-[9px] font-body ${isNight ? "text-night-muted" : "text-earth-300"}`}>Coming in v2</span>
-                        </div>
-                      )}
+                      <div className="score-bar-fill h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: vibe.color }} />
                     </div>
                   </div>
                   <span className={`text-sm font-bold font-body w-8 text-right ${isNight ? "text-night-muted" : "text-earth-500"}`}>

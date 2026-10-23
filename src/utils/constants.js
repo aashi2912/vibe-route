@@ -51,7 +51,7 @@ export const VIBES = [
 // Distinct colors for up to 4 routes on the map.
 // Chosen for accessibility — distinguishable for most color vision types.
 
-export const ROUTE_COLORS = ["#2d6a4f", "#e07a2f", "#5a67d8", "#dc2626"];
+export const ROUTE_COLORS = ["#2f6b4e", "#d8772e", "#4e63c8", "#7c5bd0"];
 
 // ============================================================
 // API CONFIG
