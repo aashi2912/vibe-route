@@ -1,45 +1,105 @@
 /**
- * Lightweight analytics — dependency-free.
+ * Product analytics — PostHog (mirrors Blind Spot for a consistent portfolio).
  *
- * Loads Vercel Web Analytics + Speed Insights via their script endpoints
- * (same data the @vercel/* packages collect) and exposes track() for a small
- * product event funnel. Everything is best-effort and no-ops if the scripts
- * are blocked or offline, so analytics can never break the app.
+ * Loads posthog-js via the official snippet (dependency-free — avoids the npm
+ * peer-dep conflict in this project) and exposes track(). The client key
+ * (VITE_POSTHOG_KEY, a phc_… public ingestion key) is safe to ship; it can
+ * only write events, not read data. The /metrics dashboard reads server-side
+ * with a separate personal key.
  *
- * Privacy: Vercel Web Analytics is cookieless and doesn't collect PII. We only
- * send event names + coarse props (which vibes, route count) — never addresses
- * or coordinates.
+ * Everything is best-effort: if the key is missing or the script is blocked,
+ * track() silently no-ops. Analytics never breaks the app.
+ *
+ * Privacy: we send event names + coarse props (vibe ids, route counts, ranks,
+ * latency). Never addresses or coordinates.
  */
 
-let booted = false;
+let ready = false;
 
 export function initAnalytics() {
-  if (booted || typeof window === "undefined") return;
-  booted = true;
-  // Vercel Web Analytics (cookieless pageviews + custom events via window.va)
+  if (ready || typeof window === "undefined") return;
+  const key = import.meta.env.VITE_POSTHOG_KEY;
+  const host = import.meta.env.VITE_POSTHOG_HOST || "https://us.i.posthog.com";
+  if (!key) {
+    // No key yet — track() will no-op. App works fine without analytics.
+    return;
+  }
   try {
-    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-    inject("https://va.vercel-scripts.com/v1/script.debug.js".replace(".debug", ""));
-    // Speed Insights (real-user load performance)
-    inject("https://va.vercel-scripts.com/v1/speed-insights/script.js");
-  } catch { /* blocked — fine */ }
+    // Official PostHog array-stub snippet (queues calls until the lib loads).
+    !(function (t, e) {
+      var o, n, p, r;
+      e.__SV ||
+        ((window.posthog = e),
+        (e._i = []),
+        (e.init = function (i, s, a) {
+          function g(t, e) {
+            var o = e.split(".");
+            2 == o.length && ((t = t[o[0]]), (e = o[1]));
+            t[e] = function () {
+              t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+            };
+          }
+          (p = t.createElement("script")).type = "text/javascript";
+          p.crossOrigin = "anonymous";
+          p.async = !0;
+          p.src = s.api_host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js";
+          (r = t.getElementsByTagName("script")[0]).parentNode.insertBefore(p, r);
+          var u = e;
+          for (
+            void 0 !== a ? (u = e[a] = []) : (a = "posthog"),
+              u.people = u.people || [],
+              u.toString = function (t) {
+                var e = "posthog";
+                return "posthog" !== a && (e += "." + a), t || (e += " (stub)"), e;
+              },
+              u.people.toString = function () {
+                return u.toString(1) + ".people (stub)";
+              },
+              o = "init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),
+              n = 0;
+            n < o.length;
+            n++
+          )
+            g(u, o[n]);
+          e._i.push([i, s, a]);
+        }),
+        (e.__SV = 1));
+    })(document, window.posthog || []);
+
+    window.posthog.init(key, {
+      api_host: host,
+      person_profiles: "identified_only",
+      capture_pageview: true,
+      autocapture: false, // we send explicit, named funnel events only
+    });
+    ready = true;
+    // North-star funnel entry.
+    track("session_start", utmProps());
+  } catch {
+    /* blocked — fine */
+  }
 }
 
-function inject(src) {
-  if (document.querySelector(`script[src="${src}"]`)) return;
-  const s = document.createElement("script");
-  s.src = src; s.defer = true;
-  document.head.appendChild(s);
+function utmProps() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    const p = { referrer: document.referrer || "direct" };
+    ["utm_source", "utm_medium", "utm_campaign"].forEach((k) => {
+      const v = q.get(k);
+      if (v) p[k] = v;
+    });
+    return p;
+  } catch {
+    return {};
+  }
 }
 
-/**
- * Track a product event. Safe to call anywhere; silently no-ops if analytics
- * isn't loaded. Keep props small and non-identifying.
- */
 export function track(event, props = {}) {
   try {
-    if (typeof window !== "undefined" && typeof window.va === "function") {
-      window.va("event", { name: event, ...props });
+    if (typeof window !== "undefined" && window.posthog && typeof window.posthog.capture === "function") {
+      window.posthog.capture(event, props);
     }
-  } catch { /* never throw from analytics */ }
+  } catch {
+    /* never throw from analytics */
+  }
 }

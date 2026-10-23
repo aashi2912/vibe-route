@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vibe Route — Live Metrics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#fbf8f1; --paper2:#f3eee3; --ink:#1f2a22; --inks:#6f7a6f;
+    --line:#e4ddce; --grn:#2f6b4e; --org:#d8772e; --blu:#4e63c8; --gold:#c99a2e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif;line-height:1.5;
+    padding:clamp(20px,5vw,48px) max(16px,env(safe-area-inset-left,0px)) 60px;}
+  .wrap{max-width:860px;margin:0 auto}
+  .head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px}
+  h1{font-family:"DM Serif Display",Georgia,serif;font-size:clamp(28px,5vw,40px);margin:0;letter-spacing:-.01em}
+  .sub{color:var(--inks);font-size:14px;margin:6px 0 2px}
+  .live{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--grn)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--grn);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .note{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:18px 0;font-size:13.5px;color:var(--inks)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0}
+  @media(max-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px;box-shadow:0 2px 10px rgba(31,42,34,.04)}
+  .kpi .v{font-family:"DM Serif Display",serif;font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+  .kpi .l{font-size:11.5px;color:var(--inks);margin-top:6px;font-weight:600}
+  .kpi .d{font-size:10.5px;color:var(--inks);opacity:.7;margin-top:2px}
+  .section-t{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--inks);margin:30px 0 12px}
+  .funnel .step{display:flex;align-items:center;gap:12px;margin:8px 0}
+  .funnel .bar{height:30px;border-radius:8px;background:var(--grn);min-width:4px;display:flex;align-items:center;padding:0 10px;color:#fff;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;transition:width .6s}
+  .funnel .name{width:140px;font-size:13px;flex:none}
+  .funnel .pct{font-size:12px;color:var(--inks);width:56px;text-align:right;flex:none;font-variant-numeric:tabular-nums}
+  .evalstrip{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+  .pill{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600}
+  .pill b{color:var(--grn)}
+  .chan{display:flex;justify-content:space-between;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13.5px}
+  .chan:last-child{border-bottom:none}
+  .chan .n{font-variant-numeric:tabular-nums;color:var(--inks)}
+  .foot{margin-top:34px;font-size:12px;color:var(--inks);opacity:.8}
+  a{color:var(--grn)}
+  .empty{text-align:center;padding:30px 10px;color:var(--inks)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Vibe Route · Live Metrics</h1>
+    <span class="live"><span class="dot"></span><span id="livelbl">connecting…</span></span>
+  </div>
+  <p class="sub">The real funnel, read live from analytics. No vanity numbers — it starts honest and fills in as people arrive.</p>
+
+  <div id="body"></div>
+
+  <div class="foot">
+    Refreshes every 30s · 30-day window · <a href="/">← back to Vibe Route</a><br/>
+    Product analytics via PostHog · AI quality from the committed eval harness.
+  </div>
+</div>
+
+<script>
+const $ = (h) => { const d=document.createElement('div'); d.innerHTML=h; return d.firstElementChild; };
+const pct = (x) => x == null ? "—" : x + "%";
+
+function kpi(v, l, d){ return `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div><div class="d">${d||""}</div></div>`; }
+
+function render(m){
+  const lbl = document.getElementById('livelbl');
+  const body = document.getElementById('body');
+
+  const evalStrip = (m.evalStrip||{});
+  const evalHtml = `
+    <div class="section-t">AI quality — measured, not claimed</div>
+    <div class="evalstrip">
+      <span class="pill">Vibe parsing accuracy <b>${Math.round((evalStrip.parse_vibes_exact??0)*100)}%</b></span>
+      <span class="pill">Parse F1 <b>${(evalStrip.parse_vibes_f1??0).toFixed(2)}</b></span>
+      <span class="pill">Narrative groundedness <b>${Math.round((evalStrip.narrative_groundedness??0)*100)}%</b></span>
+      <span class="pill">${evalStrip.cases??0} eval cases</span>
+    </div>`;
+
+  if (m.configured === false){
+    lbl.textContent = "awaiting setup";
+    body.innerHTML = `
+      <div class="note">📊 Analytics is wired but not yet connected to this dashboard. Once the PostHog read key is set in Vercel, real usage appears here automatically. The AI-quality numbers below are already live from the eval harness.</div>
+      ${evalHtml}`;
+    return;
+  }
+  if (m.error){
+    lbl.textContent = "read error";
+    body.innerHTML = `<div class="note">Couldn't read live analytics just now (will retry). AI-quality numbers below are still live.</div>${evalHtml}`;
+    return;
+  }
+
+  lbl.textContent = "live";
+  const noTraffic = (m.visitors||0) === 0;
+
+  const kpis = `
+    <div class="grid">
+      ${kpi(pct(m.activation_rate), "Activation", "visitor → routes")}
+      ${kpi(pct(m.aha_rate), "Aha", "visitor → route picked")}
+      ${kpi(pct(m.share_rate), "Share rate", "of activated")}
+      ${kpi(pct(m.retention_rate), "Day-3 return", "came back ≥3d")}
+    </div>`;
+
+  // Funnel bars (scaled to visitors)
+  const steps = [
+    ["Visitors", m.visitors],
+    ["Searched", m.searches],
+    ["Routes generated", m.routes_generated],
+    ["Route picked", m.routes_selected],
+    ["Shared", m.shares],
+  ];
+  const top = Math.max(1, m.visitors||0, ...steps.map(s=>s[1]||0));
+  const funnel = `
+    <div class="section-t">Funnel · last 30 days</div>
+    <div class="funnel">
+      ${steps.map(([n,val])=>{
+        const w = Math.max(4, Math.round(((val||0)/top)*100));
+        const p = (m.visitors) ? Math.round(((val||0)/m.visitors)*100) : 0;
+        return `<div class="step"><div class="name">${n}</div><div class="bar" style="width:${w}%">${val||0}</div><div class="pct">${m.visitors?p+'%':''}</div></div>`;
+      }).join("")}
+    </div>`;
+
+  const chan = (m.channels&&m.channels.length) ? `
+    <div class="section-t">Where visitors came from</div>
+    <div>${m.channels.map(c=>`<div class="chan"><span>${c.src}</span><span class="n">${c.visitors}</span></div>`).join("")}</div>` : "";
+
+  const nl = m.nl_success_rate!=null ? `<span class="pill">Natural-language input understood <b>${m.nl_success_rate}%</b></span>` : "";
+  const vz = m.avg_vibezone_routes!=null ? `<span class="pill">Avg scenic-detour routes / search <b>${m.avg_vibezone_routes}</b></span>` : "";
+
+  const emptyBanner = noTraffic ? `<div class="note">🌱 No visitors yet in this window. This is the real, live dashboard — numbers appear the moment people start using Vibe Route. Nothing here is fabricated.</div>` : "";
+
+  body.innerHTML = emptyBanner + kpis + funnel + (nl||vz ? `<div class="section-t">Feature engagement</div><div class="evalstrip">${nl}${vz}</div>` : "") + chan + evalHtml;
+}
+
+async function load(){
+  try{
+    const r = await fetch('/api/metrics', {cache:'no-store'});
+    render(await r.json());
+  }catch(e){
+    document.getElementById('livelbl').textContent = "offline";
+    document.getElementById('body').innerHTML = `<div class="note">Couldn't reach the metrics API. Retrying…</div>`;
+  }
+}
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>

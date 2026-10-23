@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { VIBES, ROUTE_COLORS } from "../utils/constants";
+import { track } from "../utils/analytics";
+import { useEffect } from "react";
 
 /**
  * DetailScreen — Week 4 (polished)
@@ -19,6 +21,9 @@ export default function DetailScreen({
   selectedVibes = [],
 }) {
   const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (route?.narrative) track("narrative_read", { rank: routeIndex });
+  }, [route, routeIndex]);
   if (!route) return null;
 
   function shareWalk() {
@@ -30,6 +35,7 @@ export default function DetailScreen({
     if (origin.address) p.set("oa", origin.address);
     if (destination.address) p.set("da", destination.address);
     const url = `${window.location.origin}/?${p.toString()}`;
+    track("share_clicked", { rank: routeIndex });
     navigator.clipboard?.writeText(url).then(
       () => { setCopied(true); setTimeout(() => setCopied(false), 2000); },
       () => { setCopied(false); }
@@ -183,6 +189,7 @@ export default function DetailScreen({
           <a
             href={buildMapsUrl(origin, destination, route)}
             target="_blank" rel="noopener noreferrer"
+            onClick={() => track("open_in_maps", { from: "detail", rank: routeIndex })}
             className={`block w-full py-3.5 rounded-xl text-center text-sm font-semibold font-body border-[1.5px] btn-press ${
               isNight ? "border-night-border text-night-text" : "border-earth-200 text-earth-700 bg-white"}`}
           >

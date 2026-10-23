@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { VIBES, MAX_VIBE_SELECTIONS, MIN_WALKING_DISTANCE_M, MAX_WALKING_DISTANCE_M } from "../utils/constants";
 import { distanceBetween } from "../utils/geo";
+import { track } from "../utils/analytics";
 
 /**
  * InputScreen — the landing / route planner.
@@ -85,11 +86,14 @@ export default function InputScreen({
         onVibesChange(data.vibes.slice(0, MAX_VIBE_SELECTIONS));
         const names = data.vibes.map((id) => VIBES.find((v) => v.id === id)?.label).filter(Boolean);
         setNlpResult(`✨ Detected: ${names.join(", ")}`);
+        track("nl_query_parsed", { parsed_vibes: data.vibes, success: true });
       } else {
         setNlpResult("Couldn't read that — tap the signals above instead");
+        track("nl_query_parsed", { success: false });
       }
     } catch {
       setNlpResult("AI unavailable — tap the signals above instead");
+      track("nl_query_parsed", { success: false, error: true });
     } finally { setNlpParsing(false); }
   }
 

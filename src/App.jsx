@@ -63,7 +63,7 @@ export default function App() {
   };
 
   const handleTrySample = useCallback(() => {
-    track("sample_walk");
+    track("route_search", { input_mode: "sample", vibes: SAMPLE.vibes, has_nl: false, is_sample: true });
     setSelectedVibes(SAMPLE.vibes);
     setOrigin(SAMPLE.origin);
     setDestination(SAMPLE.destination);
@@ -74,7 +74,7 @@ export default function App() {
     (searchOrigin, searchDest) => {
       setOrigin(searchOrigin);
       setDestination(searchDest);
-      track("search", { vibes: selectedVibes.join(",") });
+      track("route_search", { input_mode: searchOrigin.address === "My location" ? "geo" : "typed", vibes: selectedVibes, has_nl: false });
       setScreen("results");
 
       if (!nightOverride && searchOrigin?.latitude) {
@@ -85,13 +85,14 @@ export default function App() {
   );
 
   const handleViewDetail = useCallback((route, index) => {
-    track("route_detail", { rank: index, waypoint: route.source === "waypoint-injected" });
+    const topVibe = selectedVibes[0];
+    track("route_viewed", { rank: index, vibe_score: route.scores?.[topVibe] ?? null, waypoint: route.source === "waypoint-injected" });
     setDetailRoute(route);
     setDetailRouteIndex(index);
     setScreen("detail");
   }, []);
 
-  const handleStartNav = useCallback(() => { track("start_walking"); setScreen("navigate"); }, []);
+  const handleStartNav = useCallback(() => { track("route_selected", { via: "start_walking" }); setScreen("navigate"); }, []);
 
   const handleBack = useCallback(() => {
     if (screen === "navigate") {

@@ -28,6 +28,7 @@ export default function ResultsScreen({
   const [phase, setPhase] = useState("loading");
   const [error, setError] = useState(null);
   const [selectedRouteId, setSelectedRouteId] = useState(null);
+  const searchStart = useRef(0);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const polylinesRef = useRef([]);
@@ -43,6 +44,7 @@ export default function ResultsScreen({
         setPhase("loading");
         setError(null);
         setRoutes([]);
+        searchStart.current = Date.now();
 
         await orchestrateRoutes(
           origin, destination, selectedVibes, isNight,
@@ -62,13 +64,18 @@ export default function ResultsScreen({
             if (cancelled) return;
             setRoutes(final);
             setPhase("done");
-            track("routes_scored", { count: final.length });
+            const vibezone = final.filter((x) => x.source === "waypoint-injected").length;
+            track("routes_generated", {
+              num_routes: final.length,
+              num_vibezone_routes: vibezone,
+              latency_s: Math.round((Date.now() - searchStart.current) / 100) / 10,
+            });
           }
         );
       } catch (err) {
         if (cancelled) return;
         console.error("Pipeline error:", err);
-        track("routes_error");
+        track("routes_error", { message: String(err.message).slice(0, 60) });
         setError(err.message);
         setPhase("error");
       }
@@ -399,7 +406,7 @@ export default function ResultsScreen({
             href={`https://www.google.com/maps/dir/?api=1&origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&travelmode=walking`}
             target="_blank" rel="noopener noreferrer"
             className="block w-full py-3.5 rounded-xl bg-vibe-green text-white text-center text-sm font-semibold font-body shadow-lg shadow-vibe-green/20 btn-press"
-            onClick={() => track("maps_handoff", { from: "results" })}
+            onClick={() => track("open_in_maps", { from: "results" })}
           >
             Open in Google Maps →
           </a>
