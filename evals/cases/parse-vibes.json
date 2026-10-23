@@ -1,0 +1,21 @@
+{
+  "suite": "parse-vibes",
+  "description": "Free-text walk description -> expected vibe ID set. Vibes: green, coffee, local, lit.",
+  "cases": [
+    { "id": "pv-01", "input": "I want a quiet walk through parks", "expected": ["green"] },
+    { "id": "pv-02", "input": "Find me coffee shops and local food", "expected": ["coffee", "local"] },
+    { "id": "pv-03", "input": "Just explore the neighbourhood", "expected": ["local"] },
+    { "id": "pv-04", "input": "A peaceful green route with lots of trees", "expected": ["green"] },
+    { "id": "pv-05", "input": "Safe well-lit streets for a night walk", "expected": ["lit"] },
+    { "id": "pv-06", "input": "Bright busy route with a coffee stop", "expected": ["lit", "coffee"] },
+    { "id": "pv-07", "input": "Nature and a latte", "expected": ["green", "coffee"] },
+    { "id": "pv-08", "input": "Show me cafes, bookshops, galleries, character", "expected": ["coffee", "local"] },
+    { "id": "pv-09", "input": "Well-lit route with some greenery", "expected": ["green", "lit"], "note": "known regression risk: lit dropped" },
+    { "id": "pv-10", "input": "I just want the most scenic peaceful path, trees and quiet", "expected": ["green"] },
+    { "id": "pv-11", "input": "grab a coffee", "expected": ["coffee"] },
+    { "id": "pv-12", "input": "somewhere bright and safe after dark with food options", "expected": ["lit", "local"] },
+    { "id": "pv-13", "input": "parks, coffee, and local shops — the whole vibe", "expected": ["green", "coffee", "local"] },
+    { "id": "pv-14", "input": "asdkjfh qwerty nonsense", "expected": ["green", "local"], "note": "garbage -> documented default" },
+    { "id": "pv-15", "input": "a lively street with bars and restaurants, well lit", "expected": ["lit", "local"] }
+  ]
+}

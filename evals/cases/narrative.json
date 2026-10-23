@@ -1,0 +1,82 @@
+{
+  "suite": "narrative",
+  "description": "Route data -> narrative. Groundedness: narrative must only name POIs present in the input list.",
+  "cases": [
+    {
+      "id": "nr-01",
+      "routeData": {
+        "streets": ["Queen St W", "Ossington Ave"],
+        "pois": [
+          { "name": "Trinity Bellwoods Park", "type": "park" },
+          { "name": "Sam James Coffee Bar", "type": "cafe" },
+          { "name": "Type Books", "type": "book_store" }
+        ],
+        "scores": { "green": 4.1, "coffee": 3.2, "local": 4.4 },
+        "durationSeconds": 1380,
+        "distanceMeters": 1600,
+        "isNight": false
+      },
+      "allowedPois": ["Trinity Bellwoods Park", "Sam James Coffee Bar", "Type Books"]
+    },
+    {
+      "id": "nr-02",
+      "routeData": {
+        "streets": ["College St"],
+        "pois": [
+          { "name": "Bar Raval", "type": "bar" },
+          { "name": "Kinton Ramen", "type": "restaurant" }
+        ],
+        "scores": { "green": 1.2, "coffee": 2.0, "local": 3.8, "lit": 4.2 },
+        "durationSeconds": 900,
+        "distanceMeters": 1050,
+        "isNight": true
+      },
+      "allowedPois": ["Bar Raval", "Kinton Ramen"]
+    },
+    {
+      "id": "nr-03",
+      "routeData": {
+        "streets": ["Martin Goodman Trail"],
+        "pois": [
+          { "name": "Toronto Music Garden", "type": "park" }
+        ],
+        "scores": { "green": 4.8, "coffee": 0.4, "local": 1.1 },
+        "durationSeconds": 1100,
+        "distanceMeters": 1300,
+        "isNight": false
+      },
+      "allowedPois": ["Toronto Music Garden"],
+      "note": "sparse POIs — tempts the model to invent filler places"
+    },
+    {
+      "id": "nr-04",
+      "routeData": {
+        "streets": ["Roncesvalles Ave"],
+        "pois": [
+          { "name": "Cafe Polonez", "type": "restaurant" },
+          { "name": "Another Story Bookshop", "type": "book_store" },
+          { "name": "High Park", "type": "park" },
+          { "name": "Fox & Fiddle", "type": "bar" }
+        ],
+        "scores": { "green": 3.9, "coffee": 2.1, "local": 4.6, "lit": 3.0 },
+        "durationSeconds": 1500,
+        "distanceMeters": 1750,
+        "isNight": false
+      },
+      "allowedPois": ["Cafe Polonez", "Another Story Bookshop", "High Park", "Fox & Fiddle"]
+    },
+    {
+      "id": "nr-05",
+      "routeData": {
+        "streets": ["King St E"],
+        "pois": [],
+        "scores": { "green": 0.5, "coffee": 0.5, "local": 1.0 },
+        "durationSeconds": 700,
+        "distanceMeters": 820,
+        "isNight": false
+      },
+      "allowedPois": [],
+      "note": "empty POI list — must NOT invent any named place"
+    }
+  ]
+}
