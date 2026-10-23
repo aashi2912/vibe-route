@@ -348,16 +348,33 @@ function generateRouteName(route, index, selectedVibes, usedNames) {
     if (!usedNames.has(wpName)) return wpName;
   }
 
-  // Find which vibe this route scores highest on
-  const vibeScores = Object.entries(route.scores || {}).filter(
-    ([key, val]) => val !== null && val > 0
-  );
+  // Name by the vibes the USER selected — not whatever a route happens to
+  // score highest on. A green search must not produce coffee-named routes.
+  // We rank the user's selected vibes by this route's score on them, and only
+  // fall back to all vibes if the route has no signal on any selected one.
+  const selected = (selectedVibes && selectedVibes.length) ? selectedVibes : [];
+  const scoreFor = (id) => {
+    const v = route.scores?.[id];
+    return v == null ? -1 : v;
+  };
+
+  let vibeScores = selected
+    .map((id) => [id, scoreFor(id)])
+    .filter(([, val]) => val > 0);
+
+  // Fallback: if the route has zero signal on every selected vibe, use any
+  // vibe it does score on (better a real name than "Route 2").
+  if (vibeScores.length === 0) {
+    vibeScores = Object.entries(route.scores || {}).filter(
+      ([, val]) => val !== null && val > 0
+    );
+  }
 
   if (vibeScores.length === 0) {
     return index === 0 ? "Direct Route" : `Route ${index + 1}`;
   }
 
-  // Sort by score descending
+  // Sort by this route's score on those vibes, descending
   vibeScores.sort((a, b) => b[1] - a[1]);
 
   const nameMap = {

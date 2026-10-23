@@ -40,9 +40,10 @@ console.log("\n═══ scorer sanity ═══");
   check("coffee rises with density", s7 > s2, `2→${s2}, 7→${s7}`);
   check("realistic densities stay below 5 (differentiable)", s7 < 5.0, `7 cafes/km → ${s7}`);
   check("dense ≠ identical (differentiation works)", Math.abs(s7 - s2) > 0.3, `Δ=${(s7 - s2).toFixed(2)}`);
-  // Documented cap: only at UNrealistic density (~15/km) does it round to 5.0.
+  // After the k=5 recalibration, even high density (15/km) stays below 5 —
+  // later saturation means more of the realistic range is differentiable.
   const s15 = scoreRoute(route(1), Array.from({ length: 15 }, (_, i) => poi(`c${i}`, ["cafe"]))).coffee;
-  check("extreme density caps at 5.0 by design", s15 === 5.0, `15/km → ${s15}`);
+  check("high density still below 5 (later saturation after k=5)", s15 < 5.0 && s15 > s7, `7→${s7}, 15→${s15}`);
 }
 
 // 3) Green rewards parks + quiet streets; penalises arterials.

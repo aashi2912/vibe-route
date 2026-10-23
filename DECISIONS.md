@@ -8,6 +8,32 @@ that every call was right — it's that each was *made*, not defaulted into.
 
 ## 2026-10 — Rebuild / hardening pass
 
+### D-14 · Name routes by the user's selected vibes, not absolute scores
+**Decision.** `generateRouteName` now ranks the *selected* vibes by this route's
+score on them; it only falls back to all vibes if the route has zero signal on
+any selected one.
+**Why.** A "Green & Peaceful" search was producing routes named "The Coffee
+Route / Cafe Trail / Espresso Walk" — because the old logic named by whichever
+vibe scored highest in absolute terms, and dense areas have more cafes than
+parks. The names contradicted the user's own request, which torches trust on the
+first screen.
+
+### D-13 · Recalibrated scoring k-values; accepted that `local` saturates on similar routes
+**Decision.** Raised saturation constants (coffee k 3→5, local diversity 4→7 /
+density 8→12, lit night 4→6) and rebalanced `local` toward raw interesting-POI
+count over type-diversity.
+**Why.** Live diagnostic on a real Toronto search: `green` differentiated well
+(1.3/3.1/2.1) but `local` was pinned at 4.8 across all routes. Diversity is a
+poor *differentiator* — every dense neighbourhood hits ~12 POI types, so all
+routes looked equally "local." Raising k and weighting raw density spreads the
+realistic city band.
+**Honest limitation.** When routes share most of their geography (two close
+points), `local` *should* score similarly — that's not a bug. The real lever for
+differentiation is generating genuinely different routes (waypoint injection),
+not manufacturing score spread that isn't there. We tune the curve; we don't fake
+the signal.
+
+
 ### D-12 · Split one Google key into a browser key and a server key
 **Decision.** Proxy Places + Routes through serverless functions with a
 server-only key; load the Maps JS SDK from a separate, referrer-locked browser

@@ -95,7 +95,7 @@ function scoreCoffee(pois, routeLengthKm) {
   ).length;
 
   const density = cafeCount / routeLengthKm;
-  return logScore(density, 3);
+  return logScore(density, 5); // k raised from 3: dense cores were saturating
 }
 
 // ============================================================
@@ -125,16 +125,19 @@ function scoreLocal(pois, routeLengthKm) {
     }
   }
 
-  // Diversity score: how many unique interesting types per km
+  // Diversity score: unique interesting types per km. Raised k (4 -> 7) because
+  // every route in a dense neighbourhood hits ~12 types, so low-k saturated all
+  // routes to the same value and killed differentiation.
   const diversityDensity = interestingTypes.size / routeLengthKm;
-  const diversityScore = logScore(diversityDensity, 4);
+  const diversityScore = logScore(diversityDensity, 7);
 
-  // Density of non-generic POIs per km
+  // Density of interesting POIs per km. Raised k (8 -> 12) for the same reason.
   const poiDensity = pois.length / routeLengthKm;
-  const densityScore = logScore(poiDensity, 8);
+  const densityScore = logScore(poiDensity, 12);
 
-  // Blend: diversity matters more than raw density
-  const raw = diversityScore * 0.6 + densityScore * 0.4;
+  // Blend: weight raw density higher (0.5/0.5). Diversity barely varies between
+  // dense routes; the actual COUNT of interesting spots is what distinguishes them.
+  const raw = diversityScore * 0.5 + densityScore * 0.5;
   return Math.round(Math.min(5, Math.max(0, raw)) * 10) / 10;
 }
 
@@ -174,7 +177,7 @@ function scoreLit(route, pois, routeLengthKm) {
     p.types?.some((t) => nightTypes.has(t))
   ).length;
   const nightDensity = nightCount / routeLengthKm;
-  const nightScore = logScore(nightDensity, 4) * 0.4; // up to ~2.0 points
+  const nightScore = logScore(nightDensity, 6) * 0.4; // k raised from 4: dense night strips were pinning
 
   const raw = mainRoadScore + nightScore;
   return Math.round(Math.min(5, Math.max(0, raw)) * 10) / 10;
