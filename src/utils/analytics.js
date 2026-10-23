@@ -69,10 +69,15 @@ export function initAnalytics() {
     window.posthog.init(key, {
       api_host: host,
       person_profiles: "identified_only",
-      capture_pageview: true,
+      capture_pageview: false, // fired manually below, AFTER the product tag
       autocapture: false, // we send explicit, named funnel events only
     });
+    // Tag every event with the product so this shares a PostHog project with
+    // other apps (e.g. Blind Spot) WITHOUT mixing funnels. All /metrics queries
+    // filter on properties.product = 'vibe_route', so counts stay accurate.
+    window.posthog.register({ product: "vibe_route" });
     ready = true;
+    window.posthog.capture("$pageview");
     // North-star funnel entry.
     track("session_start", utmProps());
   } catch {

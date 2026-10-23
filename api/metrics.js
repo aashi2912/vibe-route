@@ -53,7 +53,9 @@ export default async function handler(req, res) {
 
   try {
     // One combined pass over the last 30 days.
-    const base = "events WHERE timestamp > now() - INTERVAL 30 DAY";
+    // Scope to THIS product only — the project is shared with other apps on the
+    // free plan, so every query filters on the product tag we set client-side.
+    const base = "events WHERE properties.product = 'vibe_route' AND timestamp > now() - INTERVAL 30 DAY";
     const [
       visitors, searches, generated, selected, shared, nlOk, nlAll, vibezone,
     ] = await Promise.all([
