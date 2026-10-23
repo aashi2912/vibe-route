@@ -37,6 +37,37 @@ export default defineConfig(({ mode }) => {
     return body;
   }
 
+
+  // Shared helper: call a Google REST endpoint with the server key
+  async function callGoogle(url, fieldMask, body, apiKey) {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": fieldMask,
+      },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      console.error("Google REST error:", r.status, t.slice(0, 200));
+      return { ok: false, status: r.status };
+    }
+    return { ok: true, data: await r.json() };
+  }
+
+  const PLACES_URL = "https://places.googleapis.com/v1/places:searchNearby";
+  const PLACES_MASK = "places.displayName,places.types,places.rating,places.location,places.id";
+  const ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
+  const ROUTES_MASK = [
+    "routes.duration","routes.distanceMeters","routes.polyline.encodedPolyline",
+    "routes.routeLabels","routes.legs.steps.navigationInstruction",
+    "routes.legs.steps.startLocation","routes.legs.steps.endLocation",
+    "routes.legs.steps.polyline.encodedPolyline",
+  ].join(",");
+  const serverKey = () => env.GOOGLE_MAPS_SERVER_KEY || env.VITE_GOOGLE_MAPS_KEY;
+
   return {
     plugins: [
       react(),
@@ -128,6 +159,45 @@ JSON array:`;
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify({ vibes: null, fallback: true }));
             }
+          });
+
+          // ─── /api/places (REST proxy, dev) ───────────
+          server.middlewares.use("/api/places", async (req, res) => {
+            res.setHeader("Content-Type", "application/json");
+            if (req.method !== "POST") { res.statusCode = 405; return res.end(JSON.stringify({ error: "Method not allowed" })); }
+            const apiKey = serverKey();
+            if (!apiKey) return res.end(JSON.stringify({ places: [], fallback: true, reason: "no_key" }));
+            try {
+              const { location, types, radius = 200, maxResults = 5 } = JSON.parse(await readBody(req));
+              if (!location) { res.statusCode = 400; return res.end(JSON.stringify({ error: "location required" })); }
+              const out = await callGoogle(PLACES_URL, PLACES_MASK, {
+                includedTypes: (types && types.length) ? types : ["park","cafe","restaurant"],
+                maxResultCount: Math.min(Math.max(maxResults,1),20),
+                locationRestriction: { circle: { center: { latitude: location.latitude, longitude: location.longitude }, radius } },
+              }, apiKey);
+              if (!out.ok) return res.end(JSON.stringify({ places: [], fallback: true, reason: "upstream_" + out.status }));
+              const places = (out.data.places || []).map((p) => ({ id: p.id, name: p.displayName?.text || "Unknown", types: p.types || [], rating: p.rating || null, location: p.location || null }));
+              res.end(JSON.stringify({ places }));
+            } catch (err) { console.error("places dev proxy error:", err); res.end(JSON.stringify({ places: [], fallback: true, reason: "exception" })); }
+          });
+
+          // ─── /api/routes (REST proxy, dev) ───────────
+          server.middlewares.use("/api/routes", async (req, res) => {
+            res.setHeader("Content-Type", "application/json");
+            if (req.method !== "POST") { res.statusCode = 405; return res.end(JSON.stringify({ error: "Method not allowed" })); }
+            const apiKey = serverKey();
+            if (!apiKey) { res.statusCode = 503; return res.end(JSON.stringify({ error: "routing_unavailable", reason: "no_key" })); }
+            try {
+              const { mode = "alternatives", origin, destination, waypoint, via = true } = JSON.parse(await readBody(req));
+              if (!origin || !destination) { res.statusCode = 400; return res.end(JSON.stringify({ error: "origin and destination required" })); }
+              const ll = (p) => ({ location: { latLng: { latitude: p.latitude, longitude: p.longitude } } });
+              const body = { origin: ll(origin), destination: ll(destination), travelMode: "WALK", languageCode: "en" };
+              if (mode === "alternatives") body.computeAlternativeRoutes = true;
+              else if (mode === "waypoint") body.intermediates = [{ ...(via ? { via: true } : {}), ...ll(waypoint) }];
+              const out = await callGoogle(ROUTES_URL, ROUTES_MASK, body, apiKey);
+              if (!out.ok) { res.statusCode = 502; return res.end(JSON.stringify({ error: "upstream_error", status: out.status })); }
+              res.end(JSON.stringify({ routes: out.data.routes || [] }));
+            } catch (err) { console.error("routes dev proxy error:", err); res.statusCode = 500; res.end(JSON.stringify({ error: "exception" })); }
           });
         },
       },
