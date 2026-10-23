@@ -3,6 +3,7 @@ import { isNightTime } from "./utils/geo";
 import InputScreen from "./screens/InputScreen";
 import ResultsScreen from "./screens/ResultsScreen";
 import DetailScreen from "./screens/DetailScreen";
+import WelcomeOverlay from "./components/WelcomeOverlay";
 
 /**
  * App — Root component (Week 3)
@@ -33,6 +34,19 @@ export default function App() {
   const toggleNight = useCallback(() => {
     setIsNight((prev) => !prev);
     setNightOverride(true);
+  }, []);
+
+  const SAMPLE = {
+    origin: { latitude: 43.6469, longitude: -79.4208, address: "Trinity Bellwoods Park, Toronto" },
+    destination: { latitude: 43.6542, longitude: -79.4003, address: "Kensington Market, Toronto" },
+    vibes: ["green", "coffee", "local"],
+  };
+
+  const handleTrySample = useCallback(() => {
+    setSelectedVibes(SAMPLE.vibes);
+    setOrigin(SAMPLE.origin);
+    setDestination(SAMPLE.destination);
+    setScreen("results");
   }, []);
 
   const handleSearch = useCallback(
@@ -66,13 +80,17 @@ export default function App() {
   return (
     <div className={`min-h-screen theme-transition ${isNight ? "bg-night-bg" : "bg-earth-50"}`}>
       {screen === "input" && (
-        <InputScreen
-          isNight={isNight}
-          onToggleNight={toggleNight}
-          selectedVibes={selectedVibes}
-          onVibesChange={setSelectedVibes}
-          onSearch={handleSearch}
-        />
+        <>
+          <WelcomeOverlay isNight={isNight} onTrySample={handleTrySample} />
+          <InputScreen
+            isNight={isNight}
+            onToggleNight={toggleNight}
+            selectedVibes={selectedVibes}
+            onVibesChange={setSelectedVibes}
+            onSearch={handleSearch}
+            onTrySample={handleTrySample}
+          />
+        </>
       )}
 
       {screen === "results" && (
