@@ -20,11 +20,12 @@ export const VIBES = [
     icon: "🔦",
     label: "Well-Lit",
     description: "Bright streets, open businesses",
-    placeTypes: [], // v2 — uses streetlight data, not Places API
+    placeTypes: ["bar", "restaurant", "convenience_store", "supermarket"],
     color: "#eab308",
-    // Flag that this vibe has limited functionality in v1
-    v1Limited: true,
-    v1Message: "Detailed lighting data coming soon. Currently estimates based on nearby open businesses.",
+    // Honest scoping: this is a proxy (main-road ratio + night-business
+    // density), not measured lighting. Surfaced to the user, not hidden.
+    isProxy: true,
+    proxyMessage: "Estimated from main streets and open businesses along the route — a proxy for a bright, busy walk, not measured street lighting.",
   },
   {
     id: "coffee",

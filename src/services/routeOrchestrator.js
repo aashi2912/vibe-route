@@ -167,7 +167,7 @@ export async function orchestrateRoutes(
       // Add route without scores rather than dropping it
       scoredRoutes.push({
         ...route,
-        scores: { green: 0, coffee: 0, local: 0, lit: null },
+        scores: { green: 0, coffee: 0, local: 0, lit: 0 },
         pois: [],
         samplePointCount: 0,
         scoringError: true,
@@ -240,6 +240,13 @@ function getRelevantPlaceTypes(selectedVibes) {
   // If local character is selected, add diverse types
   if (selectedVibes.includes("local")) {
     ["restaurant", "bakery", "book_store", "art_gallery", "museum"].forEach(
+      (t) => types.add(t)
+    );
+  }
+
+  // If well-lit is selected, add night-active business types (foot-traffic proxy)
+  if (selectedVibes.includes("lit")) {
+    ["bar", "restaurant", "convenience_store", "supermarket", "gas_station"].forEach(
       (t) => types.add(t)
     );
   }

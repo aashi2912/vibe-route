@@ -288,7 +288,7 @@ export default function ResultsScreen({
               {/* Score bars */}
               {hasScores ? (
                 <div className="mt-3 space-y-1.5">
-                  {selectedVibes.filter((v) => v !== "lit").map((vibeId) => {
+                  {selectedVibes.map((vibeId) => {
                     const vibe = VIBES.find((v) => v.id === vibeId);
                     const score = route.scores?.[vibeId] ?? 0;
                     return (
@@ -304,7 +304,7 @@ export default function ResultsScreen({
                 </div>
               ) : phase === "scoring" ? (
                 <div className="mt-3 space-y-2">
-                  {selectedVibes.filter((v) => v !== "lit").map((vibeId) => (
+                  {selectedVibes.map((vibeId) => (
                     <div key={vibeId} className="flex items-center gap-2">
                       <span className="text-sm">{VIBES.find((v) => v.id === vibeId)?.icon}</span>
                       <div className={`flex-1 h-2 rounded-full animate-pulse ${isNight ? "bg-night-border" : "bg-earth-100"}`} />

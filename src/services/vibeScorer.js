@@ -19,7 +19,10 @@
  *
  * KNOWN LIMITATIONS:
  * - Road type heuristic is crude (checks instruction text for keywords).
- * - Well-Lit scoring is null in v1 (deferred).
+ * - Well-Lit is a PROXY, not measured lighting. No public API exposes
+ *   streetlight data, so we estimate 'likely bright + busy' from two
+ *   signals: main-road ratio (lit arterials) + night-active business
+ *   density (foot traffic). Honest limitation, documented in the PRD.
  * - Scores are relative within a route set, not absolute.
  */
 
@@ -30,7 +33,7 @@ export function scoreRoute(route, poisAlongRoute) {
     green: scoreGreen(route, poisAlongRoute, routeLengthKm),
     coffee: scoreCoffee(poisAlongRoute, routeLengthKm),
     local: scoreLocal(poisAlongRoute, routeLengthKm),
-    lit: null, // Deferred to v2
+    lit: scoreLit(route, poisAlongRoute, routeLengthKm),
   };
 }
 
@@ -132,6 +135,48 @@ function scoreLocal(pois, routeLengthKm) {
 
   // Blend: diversity matters more than raw density
   const raw = diversityScore * 0.6 + densityScore * 0.4;
+  return Math.round(Math.min(5, Math.max(0, raw)) * 10) / 10;
+}
+
+// ============================================================
+// WELL-LIT  (PROXY — not measured lighting)
+// ============================================================
+// There is no public API for streetlight density, so "well-lit" is
+// estimated from two proxies for a bright, busy, safer-feeling street:
+//
+//   1. Main-road ratio — arterials (Ave/Blvd/Hwy) are lit and trafficked.
+//      This is the INVERSE of the quiet-street signal used by scoreGreen,
+//      so the two vibes correctly pull in opposite directions.
+//   2. Night-active business density — bars, restaurants, convenience and
+//      grocery stores signal foot traffic and ambient light.
+//
+// LIMITATION (documented): this measures "likely bright + busy", not actual
+// lux. A route can be well-lit and score low (quiet lit residential street),
+// or score high and still feel unsafe. It is a directional signal, not truth.
+
+function scoreLit(route, pois, routeLengthKm) {
+  // Signal 1: main-road ratio from navigation instructions (0..1)
+  const steps = route.steps || [];
+  const totalSteps = steps.length || 1;
+  const mainRoadSteps = steps.filter((s) => {
+    const instr = s.navigationInstruction?.instructions || "";
+    return instr.match(/\b(Ave|Avenue|Blvd|Boulevard|Highway|Expressway|Hwy|Rd|Road|St|Street)\b/i);
+  }).length;
+  const mainRoadRatio = mainRoadSteps / totalSteps;
+  const mainRoadScore = mainRoadRatio * 3; // up to 3.0 points
+
+  // Signal 2: night-active business density (bars, restaurants, convenience)
+  const nightTypes = new Set([
+    "bar", "restaurant", "night_club", "convenience_store",
+    "supermarket", "grocery_store", "gas_station", "pharmacy",
+  ]);
+  const nightCount = pois.filter((p) =>
+    p.types?.some((t) => nightTypes.has(t))
+  ).length;
+  const nightDensity = nightCount / routeLengthKm;
+  const nightScore = logScore(nightDensity, 4) * 0.4; // up to ~2.0 points
+
+  const raw = mainRoadScore + nightScore;
   return Math.round(Math.min(5, Math.max(0, raw)) * 10) / 10;
 }
 

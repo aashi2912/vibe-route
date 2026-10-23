@@ -247,7 +247,7 @@ export default function InputScreen({
         </div>
         {selectedVibes.includes("lit") && (
           <p className={`text-xs mt-2 font-body ${isNight ? "text-night-muted" : "text-earth-400"}`}>
-            ⓘ {VIBES.find((v) => v.id === "lit")?.v1Message}
+            ⓘ {VIBES.find((v) => v.id === "lit")?.proxyMessage}
           </p>
         )}
       </div>
