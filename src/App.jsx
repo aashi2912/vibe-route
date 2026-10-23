@@ -4,7 +4,9 @@ import InputScreen from "./screens/InputScreen";
 import ResultsScreen from "./screens/ResultsScreen";
 import DetailScreen from "./screens/DetailScreen";
 import WelcomeOverlay from "./components/WelcomeOverlay";
+// analytics
 import NavigationScreen from "./screens/NavigationScreen";
+import { track } from "./utils/analytics";
 
 /**
  * App — Root component (Week 3)
@@ -61,6 +63,7 @@ export default function App() {
   };
 
   const handleTrySample = useCallback(() => {
+    track("sample_walk");
     setSelectedVibes(SAMPLE.vibes);
     setOrigin(SAMPLE.origin);
     setDestination(SAMPLE.destination);
@@ -71,22 +74,24 @@ export default function App() {
     (searchOrigin, searchDest) => {
       setOrigin(searchOrigin);
       setDestination(searchDest);
+      track("search", { vibes: selectedVibes.join(",") });
       setScreen("results");
 
       if (!nightOverride && searchOrigin?.latitude) {
         setIsNight(isNightTime(searchOrigin.latitude));
       }
     },
-    [nightOverride]
+    [nightOverride, selectedVibes]
   );
 
   const handleViewDetail = useCallback((route, index) => {
+    track("route_detail", { rank: index, waypoint: route.source === "waypoint-injected" });
     setDetailRoute(route);
     setDetailRouteIndex(index);
     setScreen("detail");
   }, []);
 
-  const handleStartNav = useCallback(() => setScreen("navigate"), []);
+  const handleStartNav = useCallback(() => { track("start_walking"); setScreen("navigate"); }, []);
 
   const handleBack = useCallback(() => {
     if (screen === "navigate") {
