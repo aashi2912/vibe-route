@@ -104,7 +104,9 @@ export const POI_SEARCH_RADIUS_M = 200;
 // Street overlap threshold — if alternatives overlap more than this,
 // trigger waypoint injection. Based on our API test results:
 // 2/6 routes had 100% overlap, 2/6 had 40-50%, 2/6 had 22-67%.
-export const OVERLAP_THRESHOLD = 0.7;
+export const OVERLAP_THRESHOLD = 0.5; // was 0.7 — Google alts often
+// overlap 55-65%; at 0.7 waypoint injection never fired and users got
+// three near-identical routes. Audit 2026-10 (P1 route diversity).
 
 // ============================================================
 // UI CONFIG

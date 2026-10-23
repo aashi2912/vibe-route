@@ -198,6 +198,23 @@ export async function orchestrateRoutes(
     return { ...route, name };
   });
 
+  // Within-set relative emphasis: for each selected vibe, mark the route that
+  // scores highest on it. Gives the user a decision basis even when absolute
+  // scores are close (audit 2026-10: routes often pass similar POIs). Only
+  // award a "best for" if that route is actually the max AND there's a real
+  // signal (> 0), and don't award ties to more than the first route.
+  for (const vibeId of selectedVibes) {
+    let bestIdx = -1, bestVal = 0;
+    namedRoutes.forEach((r, idx) => {
+      const v = r.scores?.[vibeId];
+      if (v != null && v > bestVal) { bestVal = v; bestIdx = idx; }
+    });
+    if (bestIdx >= 0) {
+      namedRoutes[bestIdx].bestFor = namedRoutes[bestIdx].bestFor || [];
+      namedRoutes[bestIdx].bestFor.push(vibeId);
+    }
+  }
+
   // Notify UI — scoring complete (no narratives yet)
   if (onScoringComplete) {
     onScoringComplete(namedRoutes);

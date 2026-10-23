@@ -101,6 +101,10 @@ export default function InputScreen({
       return;
     }
     const distance = distanceBetween(originCoords, destCoords);
+    if (distance < 50) {
+      setValidationError("Your start and destination are the same place. Pick two different points.");
+      return; // hard stop — no route to compute
+    }
     if (distance < MIN_WALKING_DISTANCE_M) {
       setValidationError("Those points are under 500m apart — every route will look about the same.");
     }

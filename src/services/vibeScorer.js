@@ -27,7 +27,9 @@
  */
 
 export function scoreRoute(route, poisAlongRoute) {
-  const routeLengthKm = (route.distanceMeters || 1000) / 1000;
+  // Guard degenerate/missing distance (e.g. origin == destination returns
+  // distanceMeters null). Floor at 100m so density never divides by ~0.
+  const routeLengthKm = Math.max(0.1, (route.distanceMeters || 1000) / 1000);
 
   return {
     green: scoreGreen(route, poisAlongRoute, routeLengthKm),

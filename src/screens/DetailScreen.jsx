@@ -19,8 +19,9 @@ export default function DetailScreen({
   if (!route) return null;
 
   const color = ROUTE_COLORS[routeIndex] || "#888";
-  const minutes = Math.round(route.durationSeconds / 60);
-  const km = (route.distanceMeters / 1000).toFixed(1);
+  const hasDist = Number.isFinite(route.distanceMeters) && route.distanceMeters > 0;
+  const minutes = route.durationSeconds ? Math.round(route.durationSeconds / 60) : null;
+  const km = hasDist ? (route.distanceMeters / 1000).toFixed(1) : null;
   const allPois = route.pois || [];
 
   const streets = (route.steps || [])
@@ -47,7 +48,7 @@ export default function DetailScreen({
               {route.name || "Route"}
             </p>
             <p className={`text-xs font-body ${isNight ? "text-night-muted" : "text-earth-400"}`}>
-              {km} km · {minutes} min{route.source === "waypoint-injected" ? " · via waypoint" : ""}
+              {hasDist ? `${km} km · ${minutes} min` : "Distance unavailable"}{route.source === "waypoint-injected" ? " · scenic detour" : ""}
             </p>
           </div>
         </div>

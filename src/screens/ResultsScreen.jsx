@@ -216,6 +216,21 @@ export default function ResultsScreen({
         ))}
       </div>
 
+      {/* Sparse-area honesty: if the whole set found few POIs, say so rather than
+          presenting confident low scores as a verdict. */}
+      {phase === "done" && routes.length > 0 && (() => {
+        const totalPois = routes.reduce((n, r) => n + (r.pois?.length || 0), 0);
+        const avg = totalPois / routes.length;
+        if (avg >= 10) return null;
+        return (
+          <div className="px-4 pt-3 content-container">
+            <div className={`rounded-xl px-3.5 py-2.5 text-[12.5px] font-body ${isNight ? "bg-night-card text-night-muted" : "bg-earth-100 text-earth-500"}`}>
+              🤏 Quiet area — not many parks, cafes, or shops along these routes, so vibe scores here are limited.
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Route cards — constrained width */}
       <div className="px-4 py-3 content-container">
         {phase === "loading" && (
@@ -240,8 +255,10 @@ export default function ResultsScreen({
 
         {phase !== "loading" && !error && routes.map((route, index) => {
           const color = ROUTE_COLORS[index] || "#888";
-          const minutes = Math.round(route.durationSeconds / 60);
-          const km = (route.distanceMeters / 1000).toFixed(1);
+          const hasDist = Number.isFinite(route.distanceMeters) && route.distanceMeters > 0;
+          const minutes = route.durationSeconds ? Math.round(route.durationSeconds / 60) : null;
+          const km = hasDist ? (route.distanceMeters / 1000).toFixed(1) : null;
+          const metaText = hasDist ? `${km} km · ${minutes} min` : "Distance unavailable";
           const hasScores = (phase === "done" || phase === "narratives") && route.scores;
           const isSelected = route.id === selectedRouteId;
           const fastest = Math.min(...routes.map((r) => r.durationSeconds));
@@ -275,8 +292,8 @@ export default function ResultsScreen({
                       {route.name || `Route ${index + 1}`}
                     </p>
                     <p className={`text-xs font-body ${isNight ? "text-night-muted" : "text-earth-400"}`}>
-                      {km} km · {minutes} min
-                      {route.source === "waypoint-injected" && <span className="ml-1 text-purple-400">· via waypoint</span>}
+                      {metaText}
+                      {route.source === "waypoint-injected" && <span className="ml-1" style={{ color: "#7c5bd0" }}>· scenic detour</span>}
                     </p>
                   </div>
                 </div>
@@ -295,10 +312,14 @@ export default function ResultsScreen({
                     const score = route.scores?.[vibe.id];
                     const has = score !== null && score !== undefined;
                     const isSel = selectedVibes.includes(vibe.id);
+                    const isBest = (route.bestFor || []).includes(vibe.id);
                     const pct = has ? Math.min(100, (score / 5) * 100) : 0;
                     return (
                       <div key={vibe.id} className={`flex-1 text-center ${isSel ? "" : "opacity-45"}`}>
-                        <div className="text-[13px] leading-none mb-1.5" title={vibe.label}>{vibe.icon}</div>
+                        <div className="text-[13px] leading-none mb-1.5 relative" title={vibe.label}>
+                          {vibe.icon}
+                          {isBest && <span className="absolute -top-1 -right-0.5 text-[8px]" title={`Best for ${vibe.label}`}>⭐</span>}
+                        </div>
                         <div className={`h-6 rounded-md overflow-hidden flex items-end ${isNight ? "bg-night-border" : "bg-earth-100"}`}>
                           <div className="score-bar-fill w-full rounded-md" style={{ height: `${pct}%`, backgroundColor: vibe.color }} />
                         </div>
