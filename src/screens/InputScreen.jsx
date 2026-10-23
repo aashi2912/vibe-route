@@ -15,6 +15,7 @@ export default function InputScreen({
   onVibesChange,
   onSearch,
   onTrySample,   // optional: fills a demo route so first-timers see value
+  onTakeTour,    // optional: launches the guided walkthrough
 }) {
   const [originText, setOriginText] = useState("");
   const [destText, setDestText] = useState("");
@@ -154,6 +155,12 @@ export default function InputScreen({
           <p className={`text-sm font-body mt-2 italic ${isNight ? "text-night-muted" : "text-earth-500"}`}>
             Walk the way that feels right
           </p>
+          {onTakeTour && (
+            <button onClick={onTakeTour}
+              className={`text-xs font-semibold font-body mt-2 underline underline-offset-2 ${isNight ? "text-night-muted" : "text-earth-500"}`}>
+              How it works
+            </button>
+          )}
         </div>
         <button onClick={onToggleNight}
           className={`px-3 py-1.5 rounded-full text-xs font-semibold font-body transition-colors ${
@@ -164,7 +171,7 @@ export default function InputScreen({
 
       {/* Origin / destination */}
       <div className="space-y-2.5">
-        <div className="relative">
+        <div className="relative" data-tour="origin">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-vibe-green ring-4 ring-vibe-green/15" />
           <input ref={originRef} value={originText}
             onChange={(e) => { setOriginText(e.target.value); setOriginCoords(null); }}
@@ -175,7 +182,7 @@ export default function InputScreen({
             {locating ? "…" : "📍 Me"}
           </button>
         </div>
-        <div className="relative">
+        <div className="relative" data-tour="destination">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-vibe-orange ring-4 ring-vibe-orange/15"
             style={{ borderRadius: "50% 50% 50% 2px", transform: "translateY(-50%) rotate(45deg)" }} />
           <input ref={destRef} value={destText}
@@ -189,7 +196,7 @@ export default function InputScreen({
         <p className={`text-[13px] font-body mb-3 ${isNight ? "text-night-muted" : "text-earth-500"}`}>
           What matters on this walk? <span className="opacity-70">pick up to 3</span>
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" data-tour="vibes">
           {VIBES.map((vibe) => {
             const on = selectedVibes.includes(vibe.id);
             return (
@@ -212,7 +219,7 @@ export default function InputScreen({
       </div>
 
       {/* Natural-language input */}
-      <div className="mt-5">
+      <div className="mt-5" data-tour="nl">
         <div className="flex items-center gap-2 mb-2">
           <span className={`flex-1 h-px ${isNight ? "bg-night-border" : "bg-earth-200"}`} />
           <span className={`text-[11px] font-body ${isNight ? "text-night-muted" : "text-earth-400"}`}>or describe it in words</span>
@@ -245,7 +252,7 @@ export default function InputScreen({
         </div>
       )}
 
-      <button onClick={handleSubmit}
+      <button onClick={handleSubmit} data-tour="find"
         className="mt-6 w-full py-4 rounded-xl bg-vibe-green text-white text-[15px] font-bold font-body shadow-cta btn-press">
         Find my walk
       </button>

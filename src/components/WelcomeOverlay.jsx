@@ -16,13 +16,14 @@ function markSeen() {
   try { localStorage.setItem(SEEN_KEY, "1"); } catch { /* private mode — fine */ }
 }
 
-export default function WelcomeOverlay({ isNight, onTrySample }) {
+export default function WelcomeOverlay({ isNight, onTrySample, onTakeTour }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => { if (!hasSeen()) setOpen(true); }, []);
 
   function close() { markSeen(); setOpen(false); }
   function sample() { markSeen(); setOpen(false); onTrySample?.(); }
+  function tour() { markSeen(); setOpen(false); onTakeTour?.(); }
 
   if (!open) return null;
 
@@ -60,13 +61,17 @@ export default function WelcomeOverlay({ isNight, onTrySample }) {
           ))}
         </div>
 
-        <button onClick={sample}
+        <button onClick={tour}
           className="w-full py-3.5 rounded-xl bg-vibe-green text-white text-[15px] font-bold font-body shadow-cta btn-press">
+          Show me how it works
+        </button>
+        <button onClick={sample}
+          className={`w-full py-3 mt-2 rounded-xl text-sm font-semibold font-body btn-press border-[1.5px] ${isNight ? "border-night-border text-night-text" : "border-earth-200 text-earth-700"}`}>
           ✨ Try a sample walk
         </button>
         <button onClick={close}
-          className={`w-full py-3 mt-2 rounded-xl text-sm font-semibold font-body btn-press ${sub}`}>
-          I'll plan my own
+          className={`w-full py-2.5 mt-1 rounded-xl text-sm font-semibold font-body btn-press ${sub}`}>
+          I'll explore on my own
         </button>
 
         <p className={`text-[11px] text-center mt-4 font-body ${isNight ? "text-night-muted/60" : "text-earth-300"}`}>

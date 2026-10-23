@@ -6,6 +6,7 @@ import DetailScreen from "./screens/DetailScreen";
 import WelcomeOverlay from "./components/WelcomeOverlay";
 // analytics
 import NavigationScreen from "./screens/NavigationScreen";
+import GuidedTour from "./components/GuidedTour";
 import { track } from "./utils/analytics";
 
 /**
@@ -33,6 +34,7 @@ export default function App() {
   // Detail screen state
   const [detailRoute, setDetailRoute] = useState(null);
   const [detailRouteIndex, setDetailRouteIndex] = useState(0);
+  const [tourOpen, setTourOpen] = useState(false);
 
   // Restore a shared walk from the URL (?o=lat,lng&d=lat,lng&v=green,coffee).
   useEffect(() => {
@@ -109,7 +111,8 @@ export default function App() {
     <div className={`min-h-screen theme-transition ${isNight ? "bg-night-bg" : "bg-earth-50"}`}>
       {screen === "input" && (
         <>
-          <WelcomeOverlay isNight={isNight} onTrySample={handleTrySample} />
+          <WelcomeOverlay isNight={isNight} onTrySample={handleTrySample} onTakeTour={() => setTourOpen(true)} />
+          <GuidedTour isNight={isNight} open={tourOpen} onClose={() => setTourOpen(false)} onFinishSample={handleTrySample} />
           <InputScreen
             isNight={isNight}
             onToggleNight={toggleNight}
@@ -117,6 +120,7 @@ export default function App() {
             onVibesChange={setSelectedVibes}
             onSearch={handleSearch}
             onTrySample={handleTrySample}
+            onTakeTour={() => setTourOpen(true)}
           />
         </>
       )}
