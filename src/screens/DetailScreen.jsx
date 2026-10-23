@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { VIBES, ROUTE_COLORS } from "../utils/constants";
 
 /**
@@ -15,8 +16,25 @@ export default function DetailScreen({
   destination,
   onBack,
   onStartNav,
+  selectedVibes = [],
 }) {
+  const [copied, setCopied] = useState(false);
   if (!route) return null;
+
+  function shareWalk() {
+    const p = new URLSearchParams({
+      o: `${origin.latitude},${origin.longitude}`,
+      d: `${destination.latitude},${destination.longitude}`,
+      v: selectedVibes.join(","),
+    });
+    if (origin.address) p.set("oa", origin.address);
+    if (destination.address) p.set("da", destination.address);
+    const url = `${window.location.origin}/?${p.toString()}`;
+    navigator.clipboard?.writeText(url).then(
+      () => { setCopied(true); setTimeout(() => setCopied(false), 2000); },
+      () => { setCopied(false); }
+    );
+  }
 
   const color = ROUTE_COLORS[routeIndex] || "#888";
   const hasDist = Number.isFinite(route.distanceMeters) && route.distanceMeters > 0;
@@ -71,8 +89,14 @@ export default function DetailScreen({
 
         {/* Vibe Scores */}
         <div className={cardClass}>
-          <p className={`text-[11px] font-bold font-body uppercase tracking-wider mb-4 ${isNight ? "text-night-muted" : "text-earth-400"}`}>
-            Vibe Scores
+          <div className="flex items-baseline justify-between mb-1">
+            <p className={`text-[11px] font-bold font-body uppercase tracking-wider ${isNight ? "text-night-muted" : "text-earth-400"}`}>
+              Vibe Scores
+            </p>
+            <span className={`text-[11px] font-body ${isNight ? "text-night-muted" : "text-earth-400"}`}>0–5 scale</span>
+          </div>
+          <p className={`text-[11px] font-body mb-4 leading-snug ${isNight ? "text-night-muted" : "text-earth-400"}`}>
+            Measured from parks, cafes, shops and street type along the route (per km, with diminishing returns). Well-Lit is a proxy, not measured lighting.
           </p>
           <div className="space-y-3.5">
             {VIBES.map((vibe) => {
@@ -84,7 +108,9 @@ export default function DetailScreen({
                   <span className="text-lg w-7 text-center">{vibe.icon}</span>
                   <div className="flex-1">
                     <p className={`text-sm font-semibold font-body mb-1 ${isNight ? "text-night-text" : "text-earth-800"}`}>{vibe.label}</p>
-                    <div className={`h-2.5 rounded-full overflow-hidden ${isNight ? "bg-night-border" : "bg-earth-100"}`}>
+                    <div role="meter" aria-label={`${vibe.label}: ${available ? score.toFixed(1) : "no"} out of 5`}
+                      aria-valuenow={available ? score : undefined} aria-valuemin={0} aria-valuemax={5}
+                      className={`h-2.5 rounded-full overflow-hidden ${isNight ? "bg-night-border" : "bg-earth-100"}`}>
                       <div className="score-bar-fill h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: vibe.color }} />
                     </div>
                   </div>
@@ -162,6 +188,11 @@ export default function DetailScreen({
           >
             Open in Google Maps for live GPS →
           </a>
+          <button onClick={shareWalk}
+            className={`block w-full py-3 rounded-xl text-center text-sm font-semibold font-body btn-press ${
+              isNight ? "text-night-muted" : "text-earth-500"}`}>
+            {copied ? "✓ Link copied" : "🔗 Share this walk"}
+          </button>
         </div>
       </div>
     </div>

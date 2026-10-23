@@ -92,3 +92,14 @@ body {
     transform: scale(0.85);
   }
 }
+
+/* Respect reduced-motion for score/animation (audit P2 accessibility) */
+@media (prefers-reduced-motion: reduce) {
+  .score-bar-fill,
+  .theme-transition,
+  .route-card,
+  .btn-press:active {
+    transition: none !important;
+    animation: none !important;
+  }
+}

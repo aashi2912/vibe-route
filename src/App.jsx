@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { isNightTime } from "./utils/geo";
 import InputScreen from "./screens/InputScreen";
 import ResultsScreen from "./screens/ResultsScreen";
@@ -31,6 +31,23 @@ export default function App() {
   // Detail screen state
   const [detailRoute, setDetailRoute] = useState(null);
   const [detailRouteIndex, setDetailRouteIndex] = useState(0);
+
+  // Restore a shared walk from the URL (?o=lat,lng&d=lat,lng&v=green,coffee).
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      const o = q.get("o"), d = q.get("d");
+      if (!o || !d) return;
+      const [olat, olng] = o.split(",").map(Number);
+      const [dlat, dlng] = d.split(",").map(Number);
+      if (![olat, olng, dlat, dlng].every(Number.isFinite)) return;
+      const vibes = (q.get("v") || "green").split(",").filter((v) => ["green","coffee","local","lit"].includes(v));
+      setSelectedVibes(vibes.length ? vibes.slice(0, 3) : ["green"]);
+      setOrigin({ latitude: olat, longitude: olng, address: q.get("oa") || "Shared start" });
+      setDestination({ latitude: dlat, longitude: dlng, address: q.get("da") || "Shared destination" });
+      setScreen("results");
+    } catch { /* malformed link — ignore, show input */ }
+  }, []);
 
   const toggleNight = useCallback(() => {
     setIsNight((prev) => !prev);
@@ -116,6 +133,7 @@ export default function App() {
           isNight={isNight}
           origin={origin}
           destination={destination}
+          selectedVibes={selectedVibes}
           onBack={handleBack}
           onStartNav={handleStartNav}
         />

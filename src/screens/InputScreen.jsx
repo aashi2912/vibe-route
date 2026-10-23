@@ -20,6 +20,7 @@ export default function InputScreen({
   const [originCoords, setOriginCoords] = useState(null);
   const [destCoords, setDestCoords] = useState(null);
   const [validationError, setValidationError] = useState(null);
+  const [locating, setLocating] = useState(false);
 
   const [nlpText, setNlpText] = useState("");
   const [nlpParsing, setNlpParsing] = useState(false);
@@ -94,6 +95,26 @@ export default function InputScreen({
 
   function handleNlpKeyDown(e) { if (e.key === "Enter") { e.preventDefault(); parseVibes(); } }
 
+  function useMyLocation() {
+    if (!navigator.geolocation) {
+      setValidationError("Your browser can't share location. Type a starting point instead.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setOriginCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        setOriginText("My location");
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        setValidationError("Couldn't get your location. Type a starting point instead.");
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
+
   function handleSubmit() {
     setValidationError(null);
     if (!originCoords || !destCoords) {
@@ -143,7 +164,12 @@ export default function InputScreen({
           <span className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-vibe-green ring-4 ring-vibe-green/15" />
           <input ref={originRef} value={originText}
             onChange={(e) => { setOriginText(e.target.value); setOriginCoords(null); }}
-            placeholder="Starting point" className={field} />
+            placeholder="Starting point" className={field + " pr-24"} />
+          <button type="button" onClick={useMyLocation} disabled={locating}
+            className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold font-body px-2.5 py-1.5 rounded-lg btn-press transition-colors ${
+              isNight ? "text-vibe-green bg-vibe-green/10" : "text-vibe-green bg-vibe-green/10"}`}>
+            {locating ? "…" : "📍 Me"}
+          </button>
         </div>
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-vibe-orange ring-4 ring-vibe-orange/15"
