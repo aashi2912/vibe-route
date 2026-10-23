@@ -14,6 +14,7 @@ export default function DetailScreen({
   origin,
   destination,
   onBack,
+  onStartNav,
 }) {
   if (!route) return null;
 
@@ -140,15 +141,26 @@ export default function DetailScreen({
           </div>
         )}
 
-        {/* Action button */}
-        <a
-          href={buildMapsUrl(origin, destination, route)}
-          target="_blank" rel="noopener noreferrer"
-          className="block w-full py-4 rounded-xl text-white text-center text-base font-semibold font-body shadow-lg btn-press"
-          style={{ backgroundColor: color, boxShadow: `0 4px 20px ${color}33` }}
-        >
-          Open in Google Maps →
-        </a>
+        {/* Actions: walk it here first, hand off to live GPS when ready */}
+        <div className="space-y-2.5">
+          {onStartNav && (
+            <button
+              onClick={onStartNav}
+              className="block w-full py-4 rounded-xl text-white text-center text-base font-bold font-body shadow-lg btn-press"
+              style={{ backgroundColor: color, boxShadow: `0 4px 20px ${color}33` }}
+            >
+              🧭 Start walking
+            </button>
+          )}
+          <a
+            href={buildMapsUrl(origin, destination, route)}
+            target="_blank" rel="noopener noreferrer"
+            className={`block w-full py-3.5 rounded-xl text-center text-sm font-semibold font-body border-[1.5px] btn-press ${
+              isNight ? "border-night-border text-night-text" : "border-earth-200 text-earth-700 bg-white"}`}
+          >
+            Open in Google Maps for live GPS →
+          </a>
+        </div>
       </div>
     </div>
   );

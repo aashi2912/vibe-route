@@ -20,6 +20,7 @@ const ROUTES_FIELD_MASK = [
   "routes.polyline.encodedPolyline",
   "routes.routeLabels",
   "routes.legs.steps.navigationInstruction",
+  "routes.legs.steps.distanceMeters",
   "routes.legs.steps.startLocation",
   "routes.legs.steps.endLocation",
   "routes.legs.steps.polyline.encodedPolyline",

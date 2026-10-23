@@ -4,6 +4,7 @@ import InputScreen from "./screens/InputScreen";
 import ResultsScreen from "./screens/ResultsScreen";
 import DetailScreen from "./screens/DetailScreen";
 import WelcomeOverlay from "./components/WelcomeOverlay";
+import NavigationScreen from "./screens/NavigationScreen";
 
 /**
  * App — Root component (Week 3)
@@ -68,8 +69,12 @@ export default function App() {
     setScreen("detail");
   }, []);
 
+  const handleStartNav = useCallback(() => setScreen("navigate"), []);
+
   const handleBack = useCallback(() => {
-    if (screen === "detail") {
+    if (screen === "navigate") {
+      setScreen("detail");
+    } else if (screen === "detail") {
       setScreen("results");
       setDetailRoute(null);
     } else {
@@ -106,6 +111,18 @@ export default function App() {
 
       {screen === "detail" && (
         <DetailScreen
+          route={detailRoute}
+          routeIndex={detailRouteIndex}
+          isNight={isNight}
+          origin={origin}
+          destination={destination}
+          onBack={handleBack}
+          onStartNav={handleStartNav}
+        />
+      )}
+
+      {screen === "navigate" && (
+        <NavigationScreen
           route={detailRoute}
           routeIndex={detailRouteIndex}
           isNight={isNight}

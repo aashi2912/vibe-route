@@ -62,7 +62,7 @@ export default defineConfig(({ mode }) => {
   const ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
   const ROUTES_MASK = [
     "routes.duration","routes.distanceMeters","routes.polyline.encodedPolyline",
-    "routes.routeLabels","routes.legs.steps.navigationInstruction",
+    "routes.routeLabels","routes.legs.steps.navigationInstruction","routes.legs.steps.distanceMeters",
     "routes.legs.steps.startLocation","routes.legs.steps.endLocation",
     "routes.legs.steps.polyline.encodedPolyline",
   ].join(",");
