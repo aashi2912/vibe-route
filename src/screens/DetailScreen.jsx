@@ -37,7 +37,8 @@ export default function DetailScreen({
   return (
     <div className={`min-h-screen pb-8 ${isNight ? "bg-night-bg" : "bg-earth-50"}`}>
       {/* Header */}
-      <div className={`sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b backdrop-blur-sm ${isNight ? "border-night-border bg-night-bg/90" : "border-earth-200 bg-earth-50/90"}`}>
+      <div className={`sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b backdrop-blur-sm ${isNight ? "border-night-border bg-night-bg/90" : "border-earth-200 bg-earth-50/90"}`}
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top, 0px))", top: "env(safe-area-inset-top, 0px)" }}>
         <button onClick={onBack} className={`text-xl p-1 btn-press ${isNight ? "text-earth-200" : "text-earth-800"}`}>←</button>
         <div className="flex-1 flex items-center gap-3 min-w-0">
           <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />

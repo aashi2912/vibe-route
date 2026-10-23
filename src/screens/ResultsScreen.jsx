@@ -161,7 +161,8 @@ export default function ResultsScreen({
   return (
     <div className={`min-h-screen ${isNight ? "bg-night-bg" : "bg-earth-50"}`}>
       {/* Top bar */}
-      <div className={`flex items-center gap-3 px-4 py-3 border-b ${isNight ? "border-night-border" : "border-earth-200"}`}>
+      <div className={`flex items-center gap-3 px-4 py-3 border-b ${isNight ? "border-night-border" : "border-earth-200"}`}
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top, 0px))" }}>
         <button onClick={onBack} className={`text-xl p-1 ${isNight ? "text-earth-200" : "text-earth-800"}`}>←</button>
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-semibold font-body truncate ${isNight ? "text-earth-200" : "text-earth-800"}`}>

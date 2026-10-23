@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vibe Route — Walk the way that feels right</title>
+    <meta
+      name="description"
+      content="Compare walking routes by how they feel — greenery, safety, coffee stops, local character. Not just the fastest path."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      rel="stylesheet"
+    />
+    <!--
+      The Maps JavaScript SDK (map tiles + Places Autocomplete) must run in the
+      browser, so it needs a browser-visible key. That key is loaded dynamically
+      in src/main.jsx from VITE_GOOGLE_MAPS_BROWSER_KEY and MUST be locked down in
+      Google Cloud to: (1) HTTP referrers = your domain + localhost, and
+      (2) API restriction = Maps JavaScript API + Places API ONLY.
+      The Routes/Places REST calls do NOT use this key — they go through
+      /api/routes and /api/places with a separate server-only key.
+    -->
+    <script type="module" crossorigin src="/assets/index-Dj7u1osT.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Bve7x4dd.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
