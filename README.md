@@ -2,7 +2,7 @@
 
 **Walk the way that feels right.**
 
-An AI-powered walking route comparison tool that scores routes by how they *feel* — greenery, coffee stops, local character — not just how fast they are.
+A walking-route comparison tool that scores routes by how they *feel* — greenery, coffee stops, local character, how well-lit they are — not just how fast they are.
 
 **[Try it live →](https://vibe-route.vercel.app)**
 
@@ -10,204 +10,142 @@ An AI-powered walking route comparison tool that scores routes by how they *feel
 
 ## Why This Exists
 
-Google Maps optimizes for speed. But pedestrian research consistently shows walkers choose longer routes when they're greener, safer, or more interesting.
+Google Maps optimizes for speed. But pedestrian research consistently shows walkers accept longer routes when they're greener, safer, or more interesting.
 
 In June 2024, a former Google Maps Senior UX Researcher [publicly explained](https://www.tomsguide.com/phones/google-pixel-phones/google-maps-may-not-offer-scenic-routes-because-it-could-be-too-biased) why Google won't add scenic routing — scoring routes on "niceness" would systematically bias toward affluent neighbourhoods. He confirmed the feature is "technically entirely feasible." The barrier is design, not engineering.
 
-Vibe Route is my answer to that design challenge: score walking routes using objective, measurable signals instead of subjective "beauty" — and let users define what matters to them.
+Vibe Route is my answer to that design challenge: score walking routes using objective, measurable signals instead of subjective "beauty," and let users define what matters to them.
 
 ---
 
 ## How It Works
 
 ```
-User Input → Routes API (alternatives) → Overlap Check → Waypoint Injection
-→ Places API (POI scoring) → Vibe Scorer → LLM Narratives → Ranked Display
+User input → Routes API (alternatives) → overlap check → waypoint injection
+→ Places API (POI scoring) → vibe scorer → LLM narratives → ranked display
 ```
 
-1. User enters origin, destination, and vibe preferences (or describes their ideal walk in natural language)
-2. Google Routes API returns walking alternatives; system checks street overlap
-3. If routes overlap >70%, ML clustering discovers "vibe zones" and generates additional routes through them
-4. Each route is scored by querying for parks, cafes, restaurants along the polyline
-5. An LLM generates a 2–3 sentence narrative per route from verified POI data
-6. Routes are ranked by the user's selected vibes and displayed with scores, narratives, and POI pills
+1. User enters origin, destination, and vibe preferences — or describes their ideal walk in natural language.
+2. Google Routes API returns walking alternatives; the system checks street overlap.
+3. If alternatives overlap too much, a spatial-clustering step discovers POI-dense "vibe zones" and routes through them.
+4. Each route is scored by querying parks, cafes, and other POIs along the polyline.
+5. An LLM writes a 2–3 sentence narrative per route from verified POI data.
+6. Routes are ranked by the user's selected vibes and shown with scores, narratives, and POI pills.
 
 ---
 
-## AI Components
+## What's actually AI here (and what isn't)
 
-### AI #1: Auto Waypoint Discovery — *ML Clustering*
-Google's walking alternatives often share 70–100% of the same streets. A DBSCAN-inspired spatial clustering algorithm discovers POI-dense areas ("vibe zones") between origin and destination and generates genuinely different routes through them. This is what makes the product work globally without manual curation per city.
+This is the honest breakdown. The product has four computational components, but they are not all "AI," and treating them as if they were would be marketing, not engineering.
 
-### AI #2: Natural Language Input — *LLM Parsing*
-Users can type "quiet walk through parks with coffee stops" instead of tapping vibe chips. An LLM parses the natural language into structured vibe parameters. The chips update automatically.
-
-### AI #3: Route Narratives — *LLM Generation*
-Transforms route data into human-readable descriptions: *"This 4km walk takes you through downtown, past HOTHOUSE and The Berczy Tavern..."* Anti-hallucination design: the prompt constrains the LLM to only mention POIs confirmed by the Places API. A fallback template takes over if the LLM is unavailable. The app works without AI.
-
-### AI #4: Vibe Scoring Engine — *Density Algorithms*
-Logarithmic density-based scoring that measures POIs per kilometre with diminishing returns. Formula: `5 × (1 − e^(−density/k))`. Replaced an initial linear formula that maxed every downtown route at 5/5.
-
-### What I Rejected
-- **AI personalization** — not enough users for meaningful training data
-- **LLM scenic scoring** — would encode the exact affluence bias the Klimes controversy warned about
-- **AI soundtrack recommendations** — feature creep
-
----
-
-## Research Foundation
-
-Six peer-reviewed studies shaped the product design:
-
-| Study | Key Finding | Design Impact |
+| Component | What it really is | Evaluated how |
 |---|---|---|
-| Nanjing GPS Study (2023) | Leisure walkers take paths ~25% longer than shortest | Set 30% detour cap for waypoint injection |
-| Chicago GPS Study (2025) | Pedestrians prefer parks, sky visibility, amenities | Defined vibe scoring dimensions |
-| Portland GPS Study (2010–2013) | 1,167 walk trips — detours for attractive facilities | Validated waypoint injection approach |
-| Sejong City CPTED Study (2020) | 2× more female students feel unsafe at night | Created Night Walker persona |
-| Sustainable Cities & Society (2023) | Female pedestrians avoid poorly-lit routes | Prioritized Well-Lit feature (v2) |
-| BYU Heat Map Study (2024) | Women focus on peripheral safety hazards at night | Informed night-mode scoring weights |
+| **Natural-language vibe parsing** | **LLM** (Claude Haiku) — maps free text → vibe IDs | Classification eval, golden set — `evals/` |
+| **Route narratives** | **LLM** (Claude Haiku) — describes a route from verified POI data | Groundedness eval (anti-hallucination) — `evals/` |
+| **Waypoint discovery** | **Spatial clustering algorithm** (single-linkage, DBSCAN-family). Not a learned model. | Behavioural, via the pipeline |
+| **Vibe scoring** | **Deterministic formula** — log-density of POIs per km. No model at all. | Unit test — `evals/scorer-sanity.test.js` |
+
+Two of the four are genuine language-model features; both have a live eval harness. The other two are a classical algorithm and a formula. Being able to say which is which — and why the scorer is *not* and should not be an LLM — is the point.
+
+### The two LLM features
+
+**Natural-language input.** Type "quiet walk with a coffee stop" instead of tapping chips; an LLM parses it into structured vibe IDs. A small feature that demonstrates knowing *when* NLP earns its place (flexible input) versus when it doesn't (replacing a simple toggle).
+
+**Route narratives.** Turns raw data (streets, POIs, scores) into a short, warm description. The prompt constrains the model to mention **only** POIs from verified Places data — an anti-hallucination design — and falls back to a template if the LLM is unavailable. The app works with the AI off.
+
+### The two deterministic engines
+
+**Waypoint discovery.** Google's walking alternatives often share most of their streets. A proximity-clustering pass over Places data finds POI-dense zones between origin and destination and generates genuinely different routes through them, capped at a 30% detour (from the Nanjing GPS study's ~25% leisure-walker tolerance). It's classical spatial clustering — honest to call it an algorithm, dishonest to call it a learned model.
+
+**Vibe scoring.** Each route is scored 0–5 per vibe using a density curve `5 · (1 − e^(−density/k))` with diminishing returns, so a street with 3 cafes/km scores meaningfully differently from one with 8/km. This replaced an earlier linear formula that maxed every downtown route at 5.0. **Well-Lit** is scored as an honest *proxy* — main-road ratio plus night-business density — because no public API exposes real streetlight data. The limitation is stated in the UI, not hidden.
 
 ---
 
-## Bias Framework
+## Evaluating the AI
 
-The Klimes concern is legitimate. Scoring routes on "niceness" biases toward wealthy neighbourhoods. The product addresses this with four principles:
+`evals/` is a small harness for the two features that are actually LLM calls.
 
-1. **Objective signals** — park proximity, POI density, road type — not subjective "beauty"
-2. **User-defined vibes** — the system doesn't decide what's "good"
-3. **Income correlation testing** — planned: 50 routes across diverse neighbourhoods, correlate scores with census data
-4. **Local discovery as positive** — diverse independent shops score as high "local character," rewarding neighbourhood diversity
+```bash
+npm run eval            # both suites, against deployed prod by default
+npm run eval parse-vibes
+npm run test:scorer     # deterministic scorer unit test
+```
+
+- **parse-vibes** — intent classification against a golden set (exact-match + F1).
+- **narrative** — groundedness: every named place in a narrative must exist in the input POI list (deterministic detector + optional LLM-as-judge).
+- **scorer-sanity** — a *unit test*, not an eval. The scorer is a formula; you test formulas, you don't run an LLM judge over them.
+
+Latest live results and the honest story of a false-positive the harness surfaced in its own grader are in [`evals/RESULTS.md`](evals/RESULTS.md).
+
+---
+
+## Security — API keys
+
+Two Google keys, by necessity:
+
+- **Browser key** (`VITE_GOOGLE_MAPS_BROWSER_KEY`) — Maps JavaScript SDK only (map tiles + Places Autocomplete). It runs in the browser, so it must be restricted in Google Cloud to HTTP referrers + the Maps JS/Places APIs. It cannot be eliminated; the SDK runs client-side.
+- **Server key** (`GOOGLE_MAPS_SERVER_KEY`) — Places (New) + Routes v2 REST, used **only** by the `api/places.js` and `api/routes.js` proxies. Never shipped to the browser.
+
+The Anthropic key (`LLM_API_KEY`) is likewise server-only, used by `api/narrative.js` and `api/parse-vibes.js`.
+
+> Earlier versions shipped a single Google key in the HTML and the JS bundle. If you are forking from old history, rotate that key.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18 + Vite + Tailwind CSS |
-| Maps | Google Maps JavaScript API |
-| Routing | Google Routes API (walking + alternatives) |
-| POI Data | Google Places API (New) + Places API (legacy for Autocomplete) |
-| AI Narratives | Anthropic Claude Haiku (via server-side proxy) |
-| Hosting | Vercel (static + serverless functions) |
-| Cost | $5–22 total to build and launch |
+React 18 + Vite · Google Maps Platform (Maps JS, Places New, Routes v2) · Anthropic Claude Haiku · Vercel serverless functions · Tailwind CSS
+
+---
+
+## Local Development
+
+```bash
+npm install
+cp .env.example .env     # then fill in the three keys
+npm run dev              # Vite dev server proxies /api/* locally
+```
+
+Required env vars (see `.env.example`):
+
+```
+VITE_GOOGLE_MAPS_BROWSER_KEY=   # browser — Maps JS SDK, referrer-locked
+GOOGLE_MAPS_SERVER_KEY=         # server — Places + Routes REST
+LLM_API_KEY=                    # server — Anthropic (narratives + parsing)
+```
+
+All three must also be set in Vercel's environment variables for production.
 
 ---
 
 ## Project Structure
 
 ```
-vibe-route/
-├── src/
-│   ├── App.jsx                        # Screen routing + state
-│   ├── screens/
-│   │   ├── InputScreen.jsx            # Origin/dest + vibes + NLP input
-│   │   ├── ResultsScreen.jsx          # Map + route cards + progressive loading
-│   │   └── DetailScreen.jsx           # Full route detail view
-│   ├── services/
-│   │   ├── routeOrchestrator.js       # Pipeline: routes → waypoints → scoring → narratives
-│   │   ├── routesApi.js               # Google Routes API integration
-│   │   ├── placesApi.js               # Google Places API with caching
-│   │   ├── waypointEngine.js          # AI #1: ML clustering for waypoint discovery
-│   │   ├── vibeScorer.js              # AI #4: Logarithmic density scoring
-│   │   └── narrativeGenerator.js      # AI #3: LLM narratives with anti-hallucination
-│   └── utils/
-│       ├── geo.js                     # Polyline decoder, haversine, sampling, sunset calc
-│       └── constants.js               # Vibe definitions, API config, scoring parameters
-├── api/
-│   ├── narrative.js                   # Vercel serverless: LLM narrative proxy
-│   └── parse-vibes.js                 # Vercel serverless: NLP vibe parsing proxy
-├── index.html                         # Entry point + Google Maps script
-├── vite.config.js                     # Dev server with API proxy middleware
-├── tailwind.config.js                 # Custom theme (earth tones, night mode)
-└── package.json
+api/              Serverless proxies (keys stay here, never in the browser)
+  places.js         Google Places (New) proxy
+  routes.js         Google Routes v2 proxy
+  narrative.js      LLM narrative proxy
+  parse-vibes.js    LLM vibe-parsing proxy
+  _googleGuard.js   Shared origin-lock + server-key resolver
+src/
+  screens/        Input, Results, Detail
+  services/       routesApi, placesApi, vibeScorer, waypointEngine,
+                  narrativeGenerator, routeOrchestrator
+  utils/          geo (polyline, haversine), constants (vibes, config)
+evals/            Eval harness + golden sets + scorer unit test
 ```
 
 ---
 
-## Setup
+## Status & Limitations
 
-### Prerequisites
+Shipped and live. Known, documented limitations:
 
-- Node.js 18+
-- Google Cloud project with billing enabled
-- (Optional) Anthropic API key for AI narratives
-
-### 1. Clone and install
-
-```bash
-git clone https://github.com/YOUR_USERNAME/vibe-route.git
-cd vibe-route
-npm install
-```
-
-### 2. Enable Google APIs
-
-In [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Library, enable:
-
-- **Maps JavaScript API** — displays the map
-- **Routes API** — fetches walking directions
-- **Places API (New)** — POI search for scoring
-- **Places API** (legacy) — required by Autocomplete widget
-
-Create an API key in Credentials. Restrict by HTTP referrer: `http://localhost:5173/*` and your production domain.
-
-### 3. Configure environment
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-```
-VITE_GOOGLE_MAPS_KEY=your_google_maps_api_key
-LLM_API_KEY=your_anthropic_api_key  # optional — app works without it
-```
-
-Also replace `YOUR_API_KEY_HERE` in `index.html` with your Google Maps key.
-
-### 4. Run
-
-```bash
-npm run dev
-```
-
-Open `http://localhost:5173`
-
-### 5. Deploy to Vercel
-
-```bash
-npm i -g vercel
-vercel
-```
-
-Set environment variables in Vercel dashboard: `VITE_GOOGLE_MAPS_KEY` and `LLM_API_KEY`.
+- **Well-Lit is a proxy**, not measured lighting (no public streetlight API).
+- **Road-type signals** are parsed from navigation-instruction text — a heuristic, not a road classification dataset.
+- **Scores are relative** within a route set, not absolute across cities.
+- A **bias audit** (correlating vibe scores with neighbourhood income) is designed but not yet run — see the decision log.
 
 ---
 
-## Features
-
-- **Route comparison** — 3–4 walking routes with genuinely different paths
-- **Vibe scoring** — Green & Peaceful, Coffee Stops, Local Character (Well-Lit in v2)
-- **AI narratives** — LLM-generated descriptions from verified POI data
-- **Natural language input** — "quiet walk through parks with coffee"
-- **Day/night mode** — auto-detected with manual override
-- **Progressive loading** — routes appear first, scores fill in, narratives load last
-- **Waypoint injection** — ML clustering generates routes through interesting areas
-- **POI deduplication** — each route card shows unique places
-- **Google Maps deep link** — open selected route in Google Maps for navigation
-- **Mobile responsive** — adaptive map height, constrained card width
-
----
-
-## v2 Roadmap
-
-- **Street View Computer Vision** — semantic segmentation (DeepLabV3+) on Street View images for Green View Index. Based on MIT's Treepedia research.
-- **Well-Lit Scoring** — city streetlight dataset processing, starting with Toronto Open Data.
-- **Bias Audit** — 50 routes across diverse neighbourhoods, correlate scores with census income data.
-- **Community Layer** — user-submitted route ratings (raises moderation + privacy considerations).
-
----
-
-
+*Built by [Aashi Thakkar](https://aashithakkar.com) as a portfolio product.*
